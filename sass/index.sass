@@ -1,0 +1,134 @@
+@import "sprite"
+
+
+body
+  background-color: #f00
+
+  color: #00f
+  margin: 0
+  padding: 0
+  font-family: helvetica, arial, sans-serif
+  font-size: 20pt
+  //letter-spacing: 0.1em
+  overflow: hidden
+
+
+::selection
+  background: #ff00ff
+  color: #00ffff
+
+img
+  vertical-align: bottom
+
+
+
+a
+  color: #00f
+
+#debug
+  position: absolute
+  z-index: 220
+
+#loading
+  width: 100%
+  height: 100%
+  background-color: rgba(0,0,255,0.8)
+  position: absolute
+  top: 0
+  left: 0
+  z-index: 120
+  display: flex
+  justify-content: center
+  align-items: center
+
+  .container
+
+
+//start画面
+#start
+  width: 100%
+  height: 100%
+  background-color: rgba(255,0,0,1.0)
+  //background-image: url("../img/bg.svg")
+  //background-size: 200%
+  position: absolute
+  top: 0
+  left: 0
+  z-index: 100
+  display: flex
+  justify-content: center
+  align-items: center
+
+  .container
+    text-align: center
+    .title
+      font-size: 40px
+      padding: 10px
+      width: 343px * 1.7
+      height: 111px * 1.7
+      background-size: contain
+      background-repeat: no-repeat
+      background-image: url("../img/logo.svg")
+
+#btn
+  margin-top: 50px
+  border: 2px solid #f0f
+  text-align: center
+  font-size: 20px
+  cursor: pointer
+  border-radius: 50%
+  display: inline-block
+  padding: 50px
+
+  &:hover
+    background-color: #f0f
+
+//about画面
+#about
+  width: 100%
+  height: 100%
+  background-color: rgba(0,255,0,0.8)
+  position: absolute
+  top: 0
+  left: 0
+  z-index: 110
+  display: flex
+  justify-content: center
+  align-items: center
+  flex-direction: column
+  display: none
+  text-align: center
+
+  ul,li
+    list-style: none
+    padding: 0
+    margin: 20px
+
+  .title1
+    font-size: 24pt
+    color: #00f
+    display: block
+    font-weight: bold
+
+  .container
+    display: inline-block
+    //background-color: #ff0000
+
+  .hosoku
+    margin-top: 20px
+    font-size: 12pt
+
+  #closeBtn
+    position: absolute
+    right: 11px
+    top: 10px
+    //background-color: #f00
+    cursor: pointer
+
+
+#aboutBtn
+  position: fixed
+  top: 10px
+  right: 11px
+  z-index: 105
+  cursor: pointer

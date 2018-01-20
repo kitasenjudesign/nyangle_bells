@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<!-- saved from url=(0037)http://www6.bascule.co.jp/~nabe/neko/ -->
+<html lang="en"><script>(function main() {
+    // Create enabled event
+    function fireEnabledEvent() {
+        // If gli exists, then we are already present and shouldn't do anything
+        if (!window.gli) {
+            setTimeout(function () {
+                var enabledEvent = document.createEvent("Event");
+                enabledEvent.initEvent("WebGLEnabledEvent", true, true);
+                document.dispatchEvent(enabledEvent);
+            }, 0);
+        } else {
+            //console.log("WebGL Inspector already embedded on the page - disabling extension");
+        }
+    };
+
+    // Grab the path root from the extension
+    document.addEventListener("WebGLInspectorReadyEvent", function (e) {
+        var pathElement = document.getElementById("__webglpathroot");
+        if (window["gliloader"]) {
+            gliloader.pathRoot = pathElement.innerText;
+        } else {
+            // TODO: more?
+            window.gliCssUrl = pathElement.innerText + "gli.all.css";
+        }
+    }, false);
+
+    // Rewrite getContext to snoop for webgl
+    var originalGetContext = HTMLCanvasElement.prototype.getContext;
+    if (!HTMLCanvasElement.prototype.getContextRaw) {
+        HTMLCanvasElement.prototype.getContextRaw = originalGetContext;
+    }
+    HTMLCanvasElement.prototype.getContext = function () {
+        var ignoreCanvas = this.internalInspectorSurface;
+        if (ignoreCanvas) {
+            return originalGetContext.apply(this, arguments);
+        }
+
+        var result = originalGetContext.apply(this, arguments);
+        if (result == null) {
+            return null;
+        }
+
+        var contextNames = ["moz-webgl", "webkit-3d", "experimental-webgl", "webgl", "3d"];
+        var requestingWebGL = contextNames.indexOf(arguments[0]) != -1;
+        if (requestingWebGL) {
+            // Page is requesting a WebGL context!
+            fireEnabledEvent(this);
+
+            // If we are injected, inspect this context
+            if (window.gli) {
+                if (gli.host.inspectContext) {
+                    // TODO: pull options from extension
+                    result = gli.host.inspectContext(this, result);
+                    // NOTE: execute in a timeout so that if the dom is not yet
+                    // loaded this won't error out.
+                    window.setTimeout(function() {
+                        var hostUI = new gli.host.HostUI(result);
+                        result.hostUI = hostUI; // just so we can access it later for debugging
+                    }, 0);
+                }
+            }
+        }
+
+        return result;
+    };
+})();</script><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<title>neko</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				color: #000;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+
+				background-color: #000;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			#info {
+				position: absolute;
+				top: 0px; width: 100%;
+				padding: 5px;
+			}
+
+			a {
+
+				color: #f00;
+			}
+
+		</style>
+	<style type="text/css">.dg {
+  /** Clear list styles */
+  /* Auto-place container */
+  /* Auto-placed GUI's */
+  /* Line items that don't contain folders. */
+  /** Folder names */
+  /** Hides closed items */
+  /** Controller row */
+  /** Name-half (left) */
+  /** Controller-half (right) */
+  /** Controller placement */
+  /** Shorter number boxes when slider is present. */
+  /** Ensure the entire boolean and function row shows a hand */ }
+  .dg ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    clear: both; }
+  .dg.ac {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 0;
+    z-index: 0; }
+  .dg:not(.ac) .main {
+    /** Exclude mains in ac so that we don't hide close button */
+    overflow: hidden; }
+  .dg.main {
+    -webkit-transition: opacity 0.1s linear;
+    -o-transition: opacity 0.1s linear;
+    -moz-transition: opacity 0.1s linear;
+    transition: opacity 0.1s linear; }
+    .dg.main.taller-than-window {
+      overflow-y: auto; }
+      .dg.main.taller-than-window .close-button {
+        opacity: 1;
+        /* TODO, these are style notes */
+        margin-top: -1px;
+        border-top: 1px solid #2c2c2c; }
+    .dg.main ul.closed .close-button {
+      opacity: 1 !important; }
+    .dg.main:hover .close-button,
+    .dg.main .close-button.drag {
+      opacity: 1; }
+    .dg.main .close-button {
+      /*opacity: 0;*/
+      -webkit-transition: opacity 0.1s linear;
+      -o-transition: opacity 0.1s linear;
+      -moz-transition: opacity 0.1s linear;
+      transition: opacity 0.1s linear;
+      border: 0;
+      position: absolute;
+      line-height: 19px;
+      height: 20px;
+      /* TODO, these are style notes */
+      cursor: pointer;
+      text-align: center;
+      background-color: #000; }
+      .dg.main .close-button:hover {
+        background-color: #111; }
+  .dg.a {
+    float: right;
+    margin-right: 15px;
+    overflow-x: hidden; }
+    .dg.a.has-save > ul {
+      margin-top: 27px; }
+      .dg.a.has-save > ul.closed {
+        margin-top: 0; }
+    .dg.a .save-row {
+      position: fixed;
+      top: 0;
+      z-index: 1002; }
+  .dg li {
+    -webkit-transition: height 0.1s ease-out;
+    -o-transition: height 0.1s ease-out;
+    -moz-transition: height 0.1s ease-out;
+    transition: height 0.1s ease-out; }
+  .dg li:not(.folder) {
+    cursor: auto;
+    height: 27px;
+    line-height: 27px;
+    overflow: hidden;
+    padding: 0 4px 0 5px; }
+  .dg li.folder {
+    padding: 0;
+    border-left: 4px solid rgba(0, 0, 0, 0); }
+  .dg li.title {
+    cursor: pointer;
+    margin-left: -4px; }
+  .dg .closed li:not(.title),
+  .dg .closed ul li,
+  .dg .closed ul li > * {
+    height: 0;
+    overflow: hidden;
+    border: 0; }
+  .dg .cr {
+    clear: both;
+    padding-left: 3px;
+    height: 27px; }
+  .dg .property-name {
+    cursor: default;
+    float: left;
+    clear: left;
+    width: 40%;
+    overflow: hidden;
+    text-overflow: ellipsis; }
+  .dg .c {
+    float: left;
+    width: 60%; }
+  .dg .c input[type=text] {
+    border: 0;
+    margin-top: 4px;
+    padding: 3px;
+    width: 100%;
+    float: right; }
+  .dg .has-slider input[type=text] {
+    width: 30%;
+    /*display: none;*/
+    margin-left: 0; }
+  .dg .slider {
+    float: left;
+    width: 66%;
+    margin-left: -5px;
+    margin-right: 0;
+    height: 19px;
+    margin-top: 4px; }
+  .dg .slider-fg {
+    height: 100%; }
+  .dg .c input[type=checkbox] {
+    margin-top: 9px; }
+  .dg .c select {
+    margin-top: 5px; }
+  .dg .cr.function,
+  .dg .cr.function .property-name,
+  .dg .cr.function *,
+  .dg .cr.boolean,
+  .dg .cr.boolean * {
+    cursor: pointer; }
+  .dg .selector {
+    display: none;
+    position: absolute;
+    margin-left: -9px;
+    margin-top: 23px;
+    z-index: 10; }
+  .dg .c:hover .selector,
+  .dg .selector.drag {
+    display: block; }
+  .dg li.save-row {
+    padding: 0; }
+    .dg li.save-row .button {
+      display: inline-block;
+      padding: 0px 6px; }
+  .dg.dialogue {
+    background-color: #222;
+    width: 460px;
+    padding: 15px;
+    font-size: 13px;
+    line-height: 15px; }
+
+/* TODO Separate style and structure */
+#dg-new-constructor {
+  padding: 10px;
+  color: #222;
+  font-family: Monaco, monospace;
+  font-size: 10px;
+  border: 0;
+  resize: none;
+  box-shadow: inset 1px 1px 1px #888;
+  word-wrap: break-word;
+  margin: 12px 0;
+  display: block;
+  width: 440px;
+  overflow-y: scroll;
+  height: 100px;
+  position: relative; }
+
+#dg-local-explain {
+  display: none;
+  font-size: 11px;
+  line-height: 17px;
+  border-radius: 3px;
+  background-color: #333;
+  padding: 8px;
+  margin-top: 10px; }
+  #dg-local-explain code {
+    font-size: 10px; }
+
+#dat-gui-save-locally {
+  display: none; }
+
+/** Main type */
+.dg {
+  color: #eee;
+  font: 11px 'Lucida Grande', sans-serif;
+  text-shadow: 0 -1px 0 #111;
+  /** Auto place */
+  /* Controller row, <li> */
+  /** Controllers */ }
+  .dg.main {
+    /** Scrollbar */ }
+    .dg.main::-webkit-scrollbar {
+      width: 5px;
+      background: #1a1a1a; }
+    .dg.main::-webkit-scrollbar-corner {
+      height: 0;
+      display: none; }
+    .dg.main::-webkit-scrollbar-thumb {
+      border-radius: 5px;
+      background: #676767; }
+  .dg li:not(.folder) {
+    background: #1a1a1a;
+    border-bottom: 1px solid #2c2c2c; }
+  .dg li.save-row {
+    line-height: 25px;
+    background: #dad5cb;
+    border: 0; }
+    .dg li.save-row select {
+      margin-left: 5px;
+      width: 108px; }
+    .dg li.save-row .button {
+      margin-left: 5px;
+      margin-top: 1px;
+      border-radius: 2px;
+      font-size: 9px;
+      line-height: 7px;
+      padding: 4px 4px 5px 4px;
+      background: #c5bdad;
+      color: #fff;
+      text-shadow: 0 1px 0 #b0a58f;
+      box-shadow: 0 -1px 0 #b0a58f;
+      cursor: pointer; }
+      .dg li.save-row .button.gears {
+        background: #c5bdad url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAANCAYAAAB/9ZQ7AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAQJJREFUeNpiYKAU/P//PwGIC/ApCABiBSAW+I8AClAcgKxQ4T9hoMAEUrxx2QSGN6+egDX+/vWT4e7N82AMYoPAx/evwWoYoSYbACX2s7KxCxzcsezDh3evFoDEBYTEEqycggWAzA9AuUSQQgeYPa9fPv6/YWm/Acx5IPb7ty/fw+QZblw67vDs8R0YHyQhgObx+yAJkBqmG5dPPDh1aPOGR/eugW0G4vlIoTIfyFcA+QekhhHJhPdQxbiAIguMBTQZrPD7108M6roWYDFQiIAAv6Aow/1bFwXgis+f2LUAynwoIaNcz8XNx3Dl7MEJUDGQpx9gtQ8YCueB+D26OECAAQDadt7e46D42QAAAABJRU5ErkJggg==) 2px 1px no-repeat;
+        height: 7px;
+        width: 8px; }
+      .dg li.save-row .button:hover {
+        background-color: #bab19e;
+        box-shadow: 0 -1px 0 #b0a58f; }
+  .dg li.folder {
+    border-bottom: 0; }
+  .dg li.title {
+    padding-left: 16px;
+    background: black url(data:image/gif;base64,R0lGODlhBQAFAJEAAP////Pz8////////yH5BAEAAAIALAAAAAAFAAUAAAIIlI+hKgFxoCgAOw==) 6px 10px no-repeat;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2); }
+  .dg .closed li.title {
+    background-image: url(data:image/gif;base64,R0lGODlhBQAFAJEAAP////Pz8////////yH5BAEAAAIALAAAAAAFAAUAAAIIlGIWqMCbWAEAOw==); }
+  .dg .cr.boolean {
+    border-left: 3px solid #806787; }
+  .dg .cr.function {
+    border-left: 3px solid #e61d5f; }
+  .dg .cr.number {
+    border-left: 3px solid #2fa1d6; }
+    .dg .cr.number input[type=text] {
+      color: #2fa1d6; }
+  .dg .cr.string {
+    border-left: 3px solid #1ed36f; }
+    .dg .cr.string input[type=text] {
+      color: #1ed36f; }
+  .dg .cr.function:hover, .dg .cr.boolean:hover {
+    background: #111; }
+  .dg .c input[type=text] {
+    background: #303030;
+    outline: none; }
+    .dg .c input[type=text]:hover {
+      background: #3c3c3c; }
+    .dg .c input[type=text]:focus {
+      background: #494949;
+      color: #fff; }
+  .dg .c .slider {
+    background: #303030;
+    cursor: ew-resize; }
+  .dg .c .slider-fg {
+    background: #2fa1d6; }
+  .dg .c .slider:hover {
+    background: #3c3c3c; }
+    .dg .c .slider:hover .slider-fg {
+      background: #44abda; }
+</style></head>
+	<body data-pinterest-extension-installed="cr1.39.1">
+
+		<div id="container"><canvas width="1326" height="698" style="width: 1326px; height: 698px;"></canvas><div id="stats" style="width: 80px; opacity: 0.9; cursor: pointer; position: absolute; top: 0px;"><div id="fps" style="padding: 0px 0px 3px 3px; text-align: left; background-color: rgb(0, 0, 34);"><div id="fpsText" style="color: rgb(0, 255, 255); font-family: Helvetica, Arial, sans-serif; font-size: 9px; font-weight: bold; line-height: 15px;">27 FPS (12-53)</div><div id="fpsGraph" style="position: relative; width: 74px; height: 30px; background-color: rgb(0, 255, 255);"><span style="width: 1px; height: 30px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 30px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 30px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 30px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 30px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 30px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 30px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 30px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 30px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 22.5px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 17.1px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 16.5px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 16.5px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 26.4px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 14.1px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 14.7px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 17.4px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 14.7px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 16.8px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 14.7px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 14.7px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 16.8px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 14.7px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15.6px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 14.7px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 17.4px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15.3px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 14.4px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 17.7px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 14.7px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 14.7px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 19.5px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 17.4px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 16.2px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 14.7px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 16.8px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15.3px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 14.4px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 19.2px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 14.7px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 14.7px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15.3px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 14.7px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15.3px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 14.7px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 16.5px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 17.1px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 16.2px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 17.1px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 17.1px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 19.2px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 16.8px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 18.3px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 14.7px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15.6px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 14.7px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15.3px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 15px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 14.7px; float: left; background-color: rgb(17, 17, 51);"></span><span style="width: 1px; height: 21.9px; float: left; background-color: rgb(17, 17, 51);"></span></div></div><div id="ms" style="padding: 0px 0px 3px 3px; text-align: left; display: none; background-color: rgb(0, 34, 0);"><div id="msText" style="color: rgb(0, 255, 0); font-family: Helvetica, Arial, sans-serif; font-size: 9px; font-weight: bold; line-height: 15px;">17 MS (12-1049)</div><div id="msGraph" style="position: relative; width: 74px; height: 30px; background-color: rgb(0, 255, 0);"><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 24.9px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 24.9px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 24.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.9px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 24.75px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 25.05px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.3px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 25.05px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 25.05px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.15px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.75px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 24.75px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.75px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 25.05px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 25.05px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 24.9px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 25.05px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 24.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.75px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 21.6px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 28.2px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 24.9px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 22.5px; float: left; background-color: rgb(17, 51, 17);"></span><span style="width: 1px; height: 27.45px; float: left; background-color: rgb(17, 51, 17);"></span></div></div></div></div>
+
+		<div id="info">
+		</div>
+
+		<script src="./neko_files/three.js"></script>
+		<script src="./neko_files/OrbitControls.js"></script>
+		<script src="./neko_files/Detector.js"></script>
+		<script src="./neko_files/stats.min.js"></script>
+		<script src="./neko_files/ColladaLoader.js"></script>
+		<script src="./neko_files/Model.js"></script>
+		<script src="./neko_files/CatMaterial.js"></script>
+		<script src="./neko_files/MotionViewGui.js"></script>
+		<script src="./neko_files/dat.gui.min.js"></script>
+		<script src="./neko_files/ControlDirectionalLight.js"></script>
+
+		<script>
+
+			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+			var container, stats;
+			var camera, scene, renderer, controls;
+			var clock = new THREE.Clock();
+			var model;
+			var gui;
+			var gl,canvas;
+
+			var isdbg = false;
+			var skeletonshow = false;
+			var ctlLight,ctlLight2;
+
+            var rad = 0;
+            var cats=[];
+			var stepcount = -1;
+            var flag = false;
+			init();
+
+			function init() {
+
+				container = document.getElementById( 'container' );
+
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.01, 10000 );
+				camera.position.set( 0, 20, -50 );
+				camera.up.set( 0, 1, 0 );
+
+			        gui = new MotionViewGui();
+
+				scene = new THREE.Scene();
+
+			        ctlLight = new ControlDirectionalLight( 0xffffff, 1.5);
+			        scene.add( ctlLight.light );
+			        scene.add( ctlLight.helper );
+
+			        ctlLight2 = new ControlDirectionalLight( 0xffffff, 1.5);
+			        scene.add( ctlLight2.light );
+			        scene.add( ctlLight2.helper );
+
+		                ctlLight.helper.visible = false;
+		                ctlLight2.helper.visible = false;
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setClearColor( 0xc5d3e9, 1 );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				//renderer.sortObjects = false;
+
+				container.appendChild( renderer.domElement );
+
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				container.appendChild( stats.domElement );
+
+				controls = new THREE.OrbitControls( camera, renderer.domElement );
+				controls.target = new THREE.Vector3( 0, 0, 0 );
+				controls.update();				
+
+
+
+				// listen for messages from the gui
+				window.addEventListener( 'start-animation', onStartAnimation );
+				window.addEventListener( 're-start-animation', onReStartAnimation );
+				window.addEventListener( 'stop-animation', onStopAnimation );
+				window.addEventListener( 'pause-animation', onPauseAnimation );
+				window.addEventListener( 'step-animation', onStepAnimation );
+				window.addEventListener( 'toggle-change-mode', onChangemode );
+				window.addEventListener( 'toggle-lock-camera', onLockCameraToggle );
+				window.addEventListener( 'toggle-show-lighthelper', onShowLight );
+				window.addEventListener( 'toggle-show-debug', onShowDebug );       
+				window.addEventListener( 'toggle-step-mode', onStepMode );	
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			        setupBase();
+
+			        model = new Model();
+			        model.loadDAE( "./data/test_cat.dae", function(){
+			            // 元データの角度、サイズを補正
+			            model.rotation.set( -Math.PI/2, 0, Math.PI);
+			            model.scale.set(10,10,10);
+			            //scene.add( model );
+                        
+                        for(var j=-1;j<=1;j++){
+                            for(var i=-5;i<=5;i++){
+                                //if( i!=0 && j!=0 ){
+                                    var model2 = model.clone();
+                                    model2.random=Math.random()*2*Math.PI;
+                                    scene.add(model2);
+                                    cats.push(model2);
+                                    model2.position.set(10*i,0,10*j);
+                                //}
+                            }
+                        }
+			            animate();			
+		  	        });
+
+			}
+
+
+
+			function setupBase(){
+
+				var line_material = new THREE.LineBasicMaterial( { color: 0xffffff } ),
+				geometry = new THREE.Geometry(),
+				floor = 0, step = 2; si = 50;
+
+				for ( var i = 0; i <= si; i ++ ) {
+					geometry.vertices.push( new THREE.Vector3( - si, floor, i * step - si ) );
+					geometry.vertices.push( new THREE.Vector3(   si, floor, i * step - si ) );
+
+					geometry.vertices.push( new THREE.Vector3( i * step - si, floor, -si ) );
+					geometry.vertices.push( new THREE.Vector3( i * step - si, floor,  si ) );
+				}
+
+				this.baseline = new THREE.Line( geometry, line_material, THREE.LinePieces );
+
+				scene.add( baseline );
+                
+                window.onkeydown=_hoge;
+                window.ondblclick = _hoge;
+            }
+
+function _hoge(){
+    rad=0;
+    flag = !flag;   
+}
+
+			function onWindowResize() {
+
+			    camera.aspect = window.innerWidth / window.innerHeight;
+			    camera.updateProjectionMatrix();
+			    renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+
+			function animate() {
+
+                if(flag){
+                    rad += Math.PI*0.03;
+                    for(var i=0;i<cats.length;i++){
+                        cats[i].position.y = 2 * Math.abs( Math.sin( rad+i/100 ) );   
+                         cats[i].scale.z = 10+ 1 * Math.abs( Math.sin( rad+i/100 ) );
+                    }
+                }else{
+                     for(var i=0;i<cats.length;i++){
+                        cats[i].position.y = 0;   
+                         cats[i].scale.z = 10;//+ 1 * Math.abs( Math.sin( rad+i/100 ) );
+                    }                   
+                }
+                
+			        var scale = 1;
+			        if( gui != undefined){
+			             scale = gui.getTimeScale();
+
+				     var l1 = gui.getLight1();
+				     ctlLight.setAngle( l1[0], l1[1]);
+				     ctlLight.light.color.setStyle( gui.getColor1());
+				     ctlLight.light.intensity = l1[2];
+
+				     var l2 = gui.getLight2();
+				     ctlLight2.setAngle( l2[0], l2[1]);
+				     ctlLight2.light.color.setStyle( gui.getColor2());
+				     ctlLight2.light.intensity = l2[2];
+				     gui.update();
+			        }
+
+				requestAnimationFrame( animate, renderer.domElement );
+				var delta = clock.getDelta();
+				if ( stepcount == 1){   
+				   THREE.AnimationHandler.update( 0.03333 );
+				   stepcount = 0;
+				} else if( stepcount < 0){
+				    THREE.AnimationHandler.update( delta * scale );
+				}
+			        model.update();
+
+				renderer.render( scene, camera );
+
+				stats.update();
+
+			}
+
+			function onLockCameraToggle( event ) {
+
+			    var shouldLock = event.detail.shouldLock;
+			    controls.enabled = !shouldLock;
+			}
+
+			function onStartAnimation( event ){
+
+			}
+
+
+			function onReStartAnimation( event ){
+			}
+
+			function onStopAnimation( event ){
+			}
+
+			function onPauseAnimation( event ){
+			}
+
+			function onStepAnimation( event ){
+			     console.log("step");
+			     if( stepcount >= 0 ){
+		                 stepcount = 1;
+		             }
+			}
+		    
+		        function onShowLight( evenet ){
+			    var show = event.detail.shouldShow;
+		            ctlLight.helper.visible = show;
+		            ctlLight2.helper.visible = show;
+		        }
+
+
+		        function onShowDebug( evenet ){
+			    var show = event.detail.shouldShow;
+			    baseline.visible = show;
+			    
+			    if( model != undefined ){
+		                model.showDebug( show );
+			    }
+
+		            if( defmodel != undefined ){
+		                defmodel.visible = show;
+		                defmodel.showDebug( show );
+		            }
+
+		            if( !show ) {
+		               isdbg = true;
+		            } else {
+		               isdbg = false;
+                            }
+
+
+
+		        }
+
+			function onStepMode( event ){
+		            var stepmode = event.detail.shouldShow;
+		            if( stepmode ){
+		                stepcount = 0;
+		            } else {
+		                stepcount = -1;
+    		            }
+			}
+
+
+			function onShowTexture(event){
+			    var show = event.detail.shouldShow;
+			}
+
+			function onChangemode(event) {
+			    var mode = event.detail.localMode;
+			}
+
+		</script><div class="dg ac"><div class="dg main a" style="width: 245px;"><div style="width: 6px; margin-left: -3px; height: 0px; cursor: ew-resize; position: absolute;"></div><ul class="closed" style="height: auto;"><li class="folder"><div class="dg"><ul><li class="title">Settings</li><li class="cr boolean"><div><span class="property-name">Lock Camera</span><div class="c"><input type="checkbox"></div></div></li><li class="cr boolean"><div><span class="property-name">Show Light</span><div class="c"><input type="checkbox"></div></div></li><li class="cr boolean"><div><span class="property-name">Show Debug</span><div class="c"><input type="checkbox" checked="checked"></div></div></li><li class="cr boolean"><div><span class="property-name">Step Mode</span><div class="c"><input type="checkbox"></div></div></li><li class="cr number has-slider"><div><span class="property-name">Speed</span><div class="c"><div><input type="text"></div><div class="slider"><div class="slider-fg" style="width: 100%;"></div></div></div></div></li></ul></div></li><li class="folder"><div class="dg"><ul><li class="title">Playback</li></ul></div></li><li class="folder"><div class="dg"><ul><li class="title">Light1</li><li class="cr number has-slider"><div><span class="property-name">X1</span><div class="c"><div><input type="text"></div><div class="slider"><div class="slider-fg" style="width: 100%;"></div></div></div></div></li><li class="cr number has-slider"><div><span class="property-name">Y1</span><div class="c"><div><input type="text"></div><div class="slider"><div class="slider-fg" style="width: 0%;"></div></div></div></div></li><li class="cr number has-slider"><div><span class="property-name">intensity1</span><div class="c"><div><input type="text"></div><div class="slider"><div class="slider-fg" style="width: 15%;"></div></div></div></div></li><li class="cr string color" style="border-left-color: rgb(255, 255, 255);"><div><span class="property-name">color1</span><div class="c"><input type="text" style="outline: none; text-align: center; color: rgb(0, 0, 0); border: 0px; font-weight: bold; text-shadow: rgba(255, 255, 255, 0.701961) 0px 1px 1px; background-color: rgb(255, 255, 255);"><div class="selector" style="width: 122px; height: 102px; padding: 3px; box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 3px; background-color: rgb(34, 34, 34);"><div class="field-knob" style="position: absolute; width: 12px; height: 12px; border: 2px solid rgb(0, 0, 0); box-shadow: rgba(0, 0, 0, 0.498039) 0px 1px 3px; border-radius: 12px; z-index: 1; margin-left: -7px; margin-top: -7px; background-color: rgb(255, 255, 255);"></div><div class="saturation-field" style="width: 100px; height: 100px; border: 1px solid rgb(85, 85, 85); margin-right: 3px; display: inline-block; cursor: pointer; background: -webkit-linear-gradient(left, rgb(255, 255, 255) 0%, rgb(255, 0, 0) 100%);"><div style="width: 100%; height: 100%; background: -webkit-linear-gradient(top, rgba(0, 0, 0, 0) 0%, rgb(0, 0, 0) 100%);"></div></div><div class="hue-field" style="width: 15px; height: 100px; display: inline-block; border: 1px solid rgb(85, 85, 85); cursor: ns-resize; background: -webkit-linear-gradient(top, rgb(255, 0, 0) 0%, rgb(255, 0, 255) 17%, rgb(0, 0, 255) 34%, rgb(0, 255, 255) 50%, rgb(0, 255, 0) 67%, rgb(255, 255, 0) 84%, rgb(255, 0, 0) 100%);"><div class="hue-knob" style="position: absolute; width: 15px; height: 2px; border-right-width: 4px; border-right-style: solid; border-right-color: rgb(255, 255, 255); z-index: 1; margin-top: 100px;"></div></div></div></div></div></li></ul></div></li><li class="folder"><div class="dg"><ul><li class="title">Light2</li><li class="cr number has-slider"><div><span class="property-name">X2</span><div class="c"><div><input type="text"></div><div class="slider"><div class="slider-fg" style="width: 50%;"></div></div></div></div></li><li class="cr number has-slider"><div><span class="property-name">Y2</span><div class="c"><div><input type="text"></div><div class="slider"><div class="slider-fg" style="width: 0%;"></div></div></div></div></li><li class="cr number has-slider"><div><span class="property-name">intensity2</span><div class="c"><div><input type="text"></div><div class="slider"><div class="slider-fg" style="width: 15%;"></div></div></div></div></li><li class="cr string color" style="border-left-color: rgb(255, 255, 255);"><div><span class="property-name">color2</span><div class="c"><input type="text" style="outline: none; text-align: center; color: rgb(0, 0, 0); border: 0px; font-weight: bold; text-shadow: rgba(255, 255, 255, 0.701961) 0px 1px 1px; background-color: rgb(255, 255, 255);"><div class="selector" style="width: 122px; height: 102px; padding: 3px; box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 3px; background-color: rgb(34, 34, 34);"><div class="field-knob" style="position: absolute; width: 12px; height: 12px; border: 2px solid rgb(0, 0, 0); box-shadow: rgba(0, 0, 0, 0.498039) 0px 1px 3px; border-radius: 12px; z-index: 1; margin-left: -7px; margin-top: -7px; background-color: rgb(255, 255, 255);"></div><div class="saturation-field" style="width: 100px; height: 100px; border: 1px solid rgb(85, 85, 85); margin-right: 3px; display: inline-block; cursor: pointer; background: -webkit-linear-gradient(left, rgb(255, 255, 255) 0%, rgb(255, 0, 0) 100%);"><div style="width: 100%; height: 100%; background: -webkit-linear-gradient(top, rgba(0, 0, 0, 0) 0%, rgb(0, 0, 0) 100%);"></div></div><div class="hue-field" style="width: 15px; height: 100px; display: inline-block; border: 1px solid rgb(85, 85, 85); cursor: ns-resize; background: -webkit-linear-gradient(top, rgb(255, 0, 0) 0%, rgb(255, 0, 255) 17%, rgb(0, 0, 255) 34%, rgb(0, 255, 255) 50%, rgb(0, 255, 0) 67%, rgb(255, 255, 0) 84%, rgb(255, 0, 0) 100%);"><div class="hue-knob" style="position: absolute; width: 15px; height: 2px; border-right-width: 4px; border-right-style: solid; border-right-color: rgb(255, 255, 255); z-index: 1; margin-top: 100px;"></div></div></div></div></div></li></ul></div></li></ul><div class="close-button" style="width: 245px;">Open Controls</div></div></div>
+
+	
+
+
+</body></html>

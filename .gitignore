@@ -1,0 +1,17 @@
+Thumbs.db
+.DS_Store
+*.hxproj
+
+haxe/bin/build/
+haxe/bin/examples/
+
+*.log
+node_modules
+build
+*.node
+components
+coverage
+*.orig
+.idea
+sandbox
+gulp.1
